@@ -1,1 +1,583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📈 ETF 계산기</title>
+<style>
+body { 
+  font-family: 'Malgun Gothic', Arial, sans-serif; 
+  background:#111; 
+  color:#eee; 
+  display:flex; 
+  flex-direction:column; 
+  align-items:center; 
+  justify-content:center; 
+  padding:20px;
+  min-height:100vh;
+}
+
+h2 { color:#ff3b3b; margin-bottom:10px; }
+
+#message { 
+  color:#ff3b3b; 
+  font-size:14px; 
+  font-weight:bold; 
+  text-align:center; 
+  animation:pulse 2s infinite; 
+  margin-bottom:15px;
+  min-height:20px;
+}
+
+/* 탭 */
+.tabs {
+  display:flex;
+  gap:8px;
+  margin-bottom:20px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.tab-btn {
+  padding:10px 16px;
+  background:#222;
+  color:#aaa;
+  border:2px solid #444;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:bold;
+  transition:all 0.2s;
+}
+
+.tab-btn.active {
+  background:#ff3b3b;
+  color:#fff;
+  border-color:#ff3b3b;
+}
+
+.tab-btn:hover {
+  border-color:#ff3b3b;
+}
+
+/* 탭 콘텐츠 */
+.tab-content {
+  display:none;
+  text-align:center;
+}
+
+.tab-content.active {
+  display:block;
+  animation:fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from{ opacity:0; }
+  to{ opacity:1; }
+}
+
+/* 입력 섹션 */
+.input-section {
+  background:#1a1a1a;
+  border:1px solid #333;
+  padding:15px;
+  border-radius:8px;
+  margin-bottom:15px;
+  text-align:left;
+  max-width:400px;
+}
+
+.input-group {
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:space-between;
+}
+
+.input-group label {
+  font-size:13px;
+  color:#aaa;
+  min-width:80px;
+}
+
+.input-group input {
+  width:120px;
+  padding:8px;
+  font-size:14px;
+  text-align:right;
+  border-radius:6px;
+  border:1px solid #444;
+  background:#222;
+  color:#fff;
+}
+
+.input-group input:focus {
+  outline:none;
+  border-color:#ff3b3b;
+  box-shadow: 0 0 8px rgba(255, 59, 59, 0.3);
+}
+
+.toggle-group {
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+.toggle-btn {
+  flex:1;
+  padding:8px;
+  font-size:12px;
+  background:#222;
+  color:#aaa;
+  border:1px solid #444;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+
+.toggle-btn.active {
+  background:#ff3b3b;
+  color:#fff;
+  border-color:#ff3b3b;
+}
+
+/* 버튼들 */
+.button-group {
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  margin-bottom:15px;
+}
+
+#calcBtn, #copyBtn {
+  padding:8px 16px;
+  background:#ff3b3b;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:bold;
+  transition:all 0.2s;
+}
+
+#calcBtn:hover, #copyBtn:hover {
+  background:#ff5555;
+}
+
+#calcBtn:active, #copyBtn:active {
+  background:#d32f2f;
+}
+
+/* 결과 테이블 */
+table {
+  border-collapse:collapse;
+  margin:0 auto;
+  max-width:400px;
+}
+
+td, th {
+  border:1px solid #333;
+  padding:8px 12px;
+  text-align:right;
+  font-size:14px;
+}
+
+th {
+  background-color:#222;
+  color:#aaa;
+  font-size:12px;
+  font-weight:bold;
+}
+
+tr:nth-child(even) {
+  background-color:#1a1a1a;
+}
+
+.positive { color:#ff3b3b; }
+.negative { color:#3b82ff; }
+
+/* 괴리율 게이지 */
+.gauge-container {
+  margin-top:15px;
+  text-align:center;
+}
+
+.gauge-bar {
+  width:300px;
+  height:30px;
+  background:linear-gradient(90deg, #3b82ff 0%, #444 48%, #444 52%, #ff3b3b 100%);
+  border-radius:6px;
+  margin:10px auto;
+  position:relative;
+  overflow:hidden;
+}
+
+.gauge-needle {
+  position:absolute;
+  top:0;
+  width:3px;
+  height:100%;
+  background:#fff;
+  left:50%;
+  transform:translateX(-50%);
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
+
+.gauge-label {
+  font-size:18px;
+  font-weight:bold;
+  color:#ff3b3b;
+  margin:10px 0;
+}
+
+.gauge-tag {
+  display:inline-block;
+  padding:4px 12px;
+  border-radius:4px;
+  font-size:12px;
+  font-weight:bold;
+  margin-top:8px;
+}
+
+.gap-high { background:#3a1c22; color:#ff3b3b; }
+.gap-low { background:#1c2a44; color:#3b82ff; }
+.gap-flat { background:#222; color:#aaa; }
+
+@keyframes pulse { 
+  0%{text-shadow:0 0 5px #ff4d4d;} 
+  50%{text-shadow:0 0 20px #ff1a1a;} 
+  100%{text-shadow:0 0 5px #ff4d4d;} 
+}
+
+.result-info {
+  background:#1a1a1a;
+  border:1px solid #333;
+  padding:12px;
+  border-radius:8px;
+  margin-top:15px;
+  font-size:13px;
+  color:#aaa;
+  line-height:1.6;
+}
+</style>
+</head>
+<body>
+
+<h2>📈 ETF 계산기</h2>
+<p id="message"></p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="avg">01 평단가</button>
+  <button class="tab-btn" data-tab="sell">02 목표매도가</button>
+  <button class="tab-btn" data-tab="gap">03 괴리율</button>
+</div>
+
+<!-- TAB 1: 평단가 계산 -->
+<div id="tab-avg" class="tab-content active">
+  <div class="input-section">
+    <div class="input-group">
+      <label>현재 보유수량</label>
+      <input type="number" id="a-qty1" value="100" placeholder="주">
+    </div>
+    <div class="input-group">
+      <label>현재 평단가</label>
+      <input type="number" id="a-avg1" value="12500" placeholder="원">
+    </div>
+    <div class="input-group">
+      <label>추가매수 단가</label>
+      <input type="number" id="a-price2" value="11800" placeholder="원">
+    </div>
+    <div class="input-group">
+      <label>추가매수 수량</label>
+      <input type="number" id="a-qty2" value="50" placeholder="주">
+    </div>
+    <div class="input-group">
+      <label>평가용 현재가</label>
+      <input type="number" id="a-cur" value="11800" placeholder="원">
+    </div>
+    <div class="input-group">
+      <label>수수료율</label>
+      <input type="number" id="a-fee" value="0.015" step="0.001" placeholder="%">
+    </div>
+  </div>
+  
+  <div class="button-group">
+    <button id="calcBtn-avg" onclick="calcAvg()">계산하기</button>
+    <button id="copyBtn-avg" onclick="copyResultAvg()">결과 복사</button>
+  </div>
+
+  <div id="result-avg"></div>
+  
+  <div class="result-info">
+    💡 평가금액·손익은 위의 "현재가"를 들고만 있다고 가정한 참고치입니다.
+  </div>
+</div>
+
+<!-- TAB 2: 목표매도가 -->
+<div id="tab-sell" class="tab-content">
+  <div class="input-section">
+    <div class="input-group">
+      <label>평단가</label>
+      <input type="number" id="s-avg" value="12500" placeholder="원">
+    </div>
+    <div class="input-group">
+      <label>보유 수량</label>
+      <input type="number" id="s-qty" value="150" placeholder="주">
+    </div>
+    <div class="input-group">
+      <label>목표 수익률</label>
+      <input type="number" id="s-target" value="10" step="0.5" placeholder="%">
+    </div>
+    <div class="input-group">
+      <label>매도 수수료</label>
+      <input type="number" id="s-fee" value="0.015" step="0.001" placeholder="%">
+    </div>
+    <div style="margin-top:15px;">
+      <label style="display:block; font-size:13px; color:#aaa; margin-bottom:8px;">과세 구분</label>
+      <div class="toggle-group">
+        <button class="toggle-btn active" data-tax="0" onclick="setTax(0, this)">국내주식형 (비과세)</button>
+        <button class="toggle-btn" data-tax="15.4" onclick="setTax(15.4, this)">그 외 ETF (15.4%)</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="button-group">
+    <button id="calcBtn-sell" onclick="calcSell()">계산하기</button>
+    <button id="copyBtn-sell" onclick="copyResultSell()">결과 복사</button>
+  </div>
+
+  <div id="result-sell"></div>
+  
+  <div class="result-info">
+    💡 국내 주식형 ETF는 매매차익 비과세, 해외지수·채권형·파생형은 배당소득세 15.4% 과세
+  </div>
+</div>
+
+<!-- TAB 3: 괴리율 -->
+<div id="tab-gap" class="tab-content">
+  <div class="input-section">
+    <div class="input-group">
+      <label>시장가 (현재가)</label>
+      <input type="number" id="g-market" value="10025" placeholder="원">
+    </div>
+    <div class="input-group">
+      <label>NAV / iNAV</label>
+      <input type="number" id="g-nav" value="10000" placeholder="원">
+    </div>
+  </div>
+  
+  <div class="button-group">
+    <button id="calcBtn-gap" onclick="calcGap()">계산하기</button>
+    <button id="copyBtn-gap" onclick="copyResultGap()">결과 복사</button>
+  </div>
+
+  <div id="result-gap"></div>
+  
+  <div class="gauge-container">
+    <div class="gauge-bar">
+      <div class="gauge-needle" id="gap-needle" style="left:50%;"></div>
+    </div>
+    <div class="gauge-label" id="gap-pct">+0.25%</div>
+    <div class="gauge-tag gap-high" id="gap-tag">약간 고평가 (할증)</div>
+  </div>
+  
+  <div class="result-info">
+    💡 괴리율 = (시장가 − NAV) ÷ NAV × 100. 양수(+)면 할증, 음수(−)면 할인. 보통 ±1% 이내 수렴
+  </div>
+</div>
+
+<script>
+const messages = [
+  "🔥 붉은 주가가 솟는다. 나의 의지가 파동이 된다.",
+  "🌅 붉은 주가, 그건 단순한 숫자가 아니라 내 흐름의 증거다.",
+  "🌠 오늘도 붉은 주가가 떠오른다. 운과 나의 맥이 하나로 이어진다.",
+  "🔥 붉은 주가의 불꽃이 깨어난다. 계산은 끝, 상승은 시작이다.",
+  "💫 붉은 주가가 춤춘다. 나는 우주의 리듬을 타고 흐른다.",
+  "🚀 붉은 주가, 나의 신호. 상승은 이미 결정되었다."
+];
+document.getElementById("message").textContent = messages[Math.floor(Math.random() * messages.length)];
+
+// 탭 전환
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  });
+});
+
+let taxRate = 0;
+function setTax(rate, btn) {
+  taxRate = rate;
+  btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+const won = n => isFinite(n) ? Math.round(n).toLocaleString('ko-KR') : '0';
+
+function calcAvg() {
+  const qty1 = parseFloat(document.getElementById('a-qty1').value) || 0;
+  const avg1 = parseFloat(document.getElementById('a-avg1').value) || 0;
+  const price2 = parseFloat(document.getElementById('a-price2').value) || 0;
+  const qty2 = parseFloat(document.getElementById('a-qty2').value) || 0;
+  const cur = parseFloat(document.getElementById('a-cur').value) || 0;
+  const feeRate = (parseFloat(document.getElementById('a-fee').value) || 0) / 100;
+
+  const cost1 = qty1 * avg1;
+  const cost2 = qty2 * price2;
+  const totalCost = cost1 + cost2;
+  const totalQty = qty1 + qty2;
+  const newAvg = totalQty > 0 ? totalCost / totalQty : 0;
+  const fee = cost2 * feeRate;
+  const evalAmt = totalQty * cur;
+  const pnl = evalAmt - totalCost - fee;
+  const pnlRate = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+
+  const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+  const pnlSign = pnl >= 0 ? '+' : '';
+
+  let html = `<table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>매수 후 보유수량</td><td>${totalQty.toLocaleString('ko-KR')}주</td></tr>
+    <tr><td>총 매입금액</td><td>${won(totalCost)}원</td></tr>
+    <tr><td>예상 평단가</td><td class="positive">${won(newAvg)}원</td></tr>
+    <tr><td>매수 수수료</td><td>${won(fee)}원</td></tr>
+    <tr><td>평가금액</td><td>${won(evalAmt)}원</td></tr>
+    <tr><td class="${pnlClass}">평가손익</td><td class="${pnlClass}">${pnlSign}${won(Math.abs(pnl))}원 (${pnlSign}${pnlRate.toFixed(2)}%)</td></tr>
+  </table>`;
+  document.getElementById('result-avg').innerHTML = html;
+}
+
+function calcSell() {
+  const avg = parseFloat(document.getElementById('s-avg').value) || 0;
+  const qty = parseFloat(document.getElementById('s-qty').value) || 0;
+  const target = (parseFloat(document.getElementById('s-target').value) || 0) / 100;
+  const feeRate = (parseFloat(document.getElementById('s-fee').value) || 0) / 100;
+
+  const cost = avg * qty;
+  const targetProfit = cost * target;
+
+  let sellAmt;
+  if (taxRate <= 0) {
+    sellAmt = (targetProfit + cost) / (1 - feeRate);
+  } else {
+    const t = taxRate / 100;
+    sellAmt = (cost + targetProfit / (1 - t)) / (1 - feeRate);
+  }
+  
+  const sellPrice = qty > 0 ? sellAmt / qty : 0;
+  const sellFee = sellAmt * feeRate;
+  const preTaxProfit = sellAmt - cost - sellFee;
+  const tax = taxRate > 0 ? Math.max(0, preTaxProfit) * (taxRate / 100) : 0;
+  const realized = preTaxProfit - tax;
+  const rate = cost > 0 ? (realized / cost * 100) : 0;
+
+  let html = `<table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>매입금액</td><td>${won(cost)}원</td></tr>
+    <tr><td class="positive">목표 매도단가</td><td class="positive">${won(sellPrice)}원</td></tr>
+    <tr><td>예상 매도금액</td><td>${won(sellAmt)}원</td></tr>
+    <tr><td>수수료+세금</td><td>${won(sellFee + tax)}원</td></tr>
+    <tr><td class="positive">실현손익</td><td class="positive">+${won(realized)}원</td></tr>
+    <tr><td class="positive">수익률</td><td class="positive">+${rate.toFixed(2)}%</td></tr>
+  </table>`;
+  document.getElementById('result-sell').innerHTML = html;
+}
+
+function calcGap() {
+  const market = parseFloat(document.getElementById('g-market').value) || 0;
+  const nav = parseFloat(document.getElementById('g-nav').value) || 0;
+  const diff = market - nav;
+  const pct = nav > 0 ? (diff / nav * 100) : 0;
+  const impact100 = diff * 100;
+
+  let label, cls;
+  if (Math.abs(pct) < 0.1) {
+    label = '적정 (NAV와 근접)';
+    cls = 'gap-flat';
+  } else if (pct > 0) {
+    label = pct > 1 ? '고평가 (할증) — 주의' : '약간 고평가 (할증)';
+    cls = 'gap-high';
+  } else {
+    label = pct < -1 ? '저평가 (할인) — 주의' : '약간 저평가 (할인)';
+    cls = 'gap-low';
+  }
+
+  const clamped = Math.max(-3, Math.min(3, pct));
+  const leftPct = 50 + (clamped / 3) * 50;
+  document.getElementById('gap-needle').style.left = leftPct + '%';
+  document.getElementById('gap-pct').textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+  document.getElementById('gap-tag').className = 'gauge-tag ' + cls;
+  document.getElementById('gap-tag').textContent = label;
+
+  const diffClass = diff >= 0 ? 'positive' : 'negative';
+  const diffSign = diff >= 0 ? '+' : '';
+
+  let html = `<table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>시장가 − NAV</td><td class="${diffClass}">${diffSign}${won(Math.abs(diff))}원</td></tr>
+    <tr><td>1주당 괴리금액</td><td class="${diffClass}">${diffSign}${won(Math.abs(diff))}원</td></tr>
+    <tr><td>100주 매매 시 영향액</td><td class="${diffClass}">${diffSign}${won(Math.abs(impact100))}원</td></tr>
+  </table>`;
+  document.getElementById('result-gap').innerHTML = html;
+}
+
+function copyResultAvg() {
+  const html = document.getElementById('result-avg').innerHTML;
+  if (!html.trim()) { alert('먼저 계산하세요!'); return; }
+  let text = '【평단가 계산 결과】\n';
+  document.querySelectorAll('#result-avg table tr').forEach(r => {
+    let cells = [];
+    for (let c of r.cells) cells.push(c.innerText);
+    text += cells.join('\t') + '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => alert('결과가 복사되었습니다!'));
+}
+
+function copyResultSell() {
+  const html = document.getElementById('result-sell').innerHTML;
+  if (!html.trim()) { alert('먼저 계산하세요!'); return; }
+  let text = '【목표매도가 계산 결과】\n';
+  document.querySelectorAll('#result-sell table tr').forEach(r => {
+    let cells = [];
+    for (let c of r.cells) cells.push(c.innerText);
+    text += cells.join('\t') + '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => alert('결과가 복사되었습니다!'));
+}
+
+function copyResultGap() {
+  const html = document.getElementById('result-gap').innerHTML;
+  if (!html.trim()) { alert('먼저 계산하세요!'); return; }
+  let text = '【괴리율 계산 결과】\n';
+  const pct = document.getElementById('gap-pct').textContent;
+  text += '괴리율: ' + pct + '\n';
+  text += '상태: ' + document.getElementById('gap-tag').textContent + '\n\n';
+  document.querySelectorAll('#result-gap table tr').forEach(r => {
+    let cells = [];
+    for (let c of r.cells) cells.push(c.innerText);
+    text += cells.join('\t') + '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => alert('결과가 복사되었습니다!'));
+}
+
+// 엔터키로 계산
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const activeTab = document.querySelector('.tab-content.active').id;
+      if (activeTab === 'tab-avg') calcAvg();
+      else if (activeTab === 'tab-sell') calcSell();
+      else if (activeTab === 'tab-gap') calcGap();
+    }
+  });
+});
+</script>
+
+</body>
+</html>
 
